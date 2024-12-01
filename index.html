@@ -84,6 +84,9 @@
     const messageInput = document.getElementById('message-input');
     const sendButton = document.getElementById('send-button');
 
+    // Connect to WebSocket server
+    const socket = new WebSocket('ws://localhost:8080'); // Update with your server address
+
     // Function to add a message to the chat
     function addMessage(sender, text) {
         const messageElement = document.createElement('div');
@@ -95,16 +98,19 @@
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
     }
 
+    // Listen for messages from the server
+    socket.addEventListener('message', (event) => {
+        const { sender, text } = JSON.parse(event.data);
+        addMessage(sender, text);
+    });
+
     // Handle sending a message
     sendButton.addEventListener('click', () => {
         const messageText = messageInput.value.trim();
         if (messageText) {
-            addMessage('You', messageText); // Add the user's message
+            const message = { sender: 'Anonymous', text: messageText };
+            socket.send(JSON.stringify(message)); // Send message to server
             messageInput.value = '';
-            // Simulate a response from the server
-            setTimeout(() => {
-                addMessage('Anonymous', 'Thanks for your message!');
-            }, 1000);
         }
     });
 
