@@ -3,99 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anonymous Chat Room</title>
+    <title>3D Cube</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
+            height: 100vh;
             margin: 0;
-            padding: 0;
+            background-color: #282c34;
+            perspective: 1000px;
         }
-        #chat-room {
-            width: 90%;
-            max-width: 600px;
-            margin-top: 20px;
+
+        .cube {
+            position: relative;
+            width: 100px;
+            height: 100px;
+            transform-style: preserve-3d;
+            animation: rotateCube 5s infinite linear;
         }
-        #messages {
-            height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            margin-bottom: 10px;
+
+        .cube div {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: rgba(255, 255, 255, 0.8);
+            border: 2px solid #fff;
         }
-        input[type="text"] {
-            width: 80%;
-            padding: 10px;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
+
+        .front  { transform: rotateY(0deg) translateZ(50px); background: #ff0000; }
+        .back   { transform: rotateY(180deg) translateZ(50px); background: #00ff00; }
+        .right  { transform: rotateY(90deg) translateZ(50px); background: #0000ff; }
+        .left   { transform: rotateY(-90deg) translateZ(50px); background: #ffff00; }
+        .top    { transform: rotateX(90deg) translateZ(50px); background: #ff00ff; }
+        .bottom { transform: rotateX(-90deg) translateZ(50px); background: #00ffff; }
+
+        @keyframes rotateCube {
+            0% { transform: rotateX(0deg) rotateY(0deg); }
+            50% { transform: rotateX(180deg) rotateY(180deg); }
+            100% { transform: rotateX(360deg) rotateY(360deg); }
         }
     </style>
 </head>
 <body>
-
-<div id="chat-room">
-    <h2>Anonymous Chat Room</h2>
-    <div id="messages"></div>
-    <input type="text" id="message-input" placeholder="Type your message here...">
-    <button id="send-btn">Send</button>
-</div>
-
-<!-- Firebase SDK (Modular Version) -->
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.19.0/firebase-app.js";
-    import { getDatabase, ref, set, onChildAdded, push } from "https://www.gstatic.com/firebasejs/9.19.0/firebase-database.js";
-
-    // Your Firebase configuration
-    const firebaseConfig = {
-        apiKey: "your-api-key",
-        authDomain: "your-auth-domain",
-        databaseURL: "your-database-url",
-        projectId: "your-project-id",
-        storageBucket: "your-storage-bucket",
-        messagingSenderId: "your-sender-id",
-        appId: "your-app-id"
-    };
-
-    // Initialize Firebase
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    // DOM elements
-    const messageInput = document.getElementById('message-input');
-    const sendButton = document.getElementById('send-btn');
-    const messagesDiv = document.getElementById('messages');
-
-    // Sending a message
-    sendButton.addEventListener('click', function () {
-        const message = messageInput.value.trim();
-        if (message !== '') {
-            const messagesRef = ref(database, 'messages');
-            const newMessageRef = push(messagesRef);
-            set(newMessageRef, {
-                text: message,
-                timestamp: Date.now()
-            });
-            messageInput.value = ''; // Clear input field
-        }
-    });
-
-    // Listen for new messages in the database
-    const messagesRef = ref(database, 'messages');
-    onChildAdded(messagesRef, function (snapshot) {
-        const messageData = snapshot.val();
-        const messageElement = document.createElement('div');
-        messageElement.textContent = messageData.text;
-        messagesDiv.appendChild(messageElement);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
-    });
-</script>
-
+    <div class="cube">
+        <div class="front"></div>
+        <div class="back"></div>
+        <div class="right"></div>
+        <div class="left"></div>
+        <div class="top"></div>
+        <div class="bottom"></div>
+    </div>
 </body>
 </html>
