@@ -7,118 +7,91 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f3f3f3;
-        }
-
-        #chat-container {
-            width: 100%;
-            max-width: 600px;
-            margin: 50px auto;
-            background: #fff;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
         }
-
+        #chat-room {
+            width: 90%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
         #messages {
-            flex: 1;
-            padding: 10px;
+            height: 300px;
             overflow-y: auto;
-            border-bottom: 1px solid #ccc;
-        }
-
-        .message {
+            border: 1px solid #ccc;
+            padding: 10px;
             margin-bottom: 10px;
         }
-
-        .message span {
-            font-weight: bold;
-        }
-
-        #input-container {
-            display: flex;
+        input[type="text"] {
+            width: 80%;
             padding: 10px;
-            background: #f9f9f9;
         }
-
-        #input-container input {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-
-        #input-container button {
-            padding: 8px 15px;
-            margin-left: 10px;
-            border: none;
-            background-color: #007bff;
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
             color: white;
-            border-radius: 4px;
+            border: none;
             cursor: pointer;
-        }
-
-        #input-container button:hover {
-            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
 
-<div id="chat-container">
-    <div id="messages">
-        <!-- Chat messages will appear here -->
-    </div>
-    <div id="input-container">
-        <input type="text" id="message-input" placeholder="Type a message...">
-        <button id="send-button">Send</button>
-    </div>
+<div id="chat-room">
+    <h2>Anonymous Chat Room</h2>
+    <div id="messages"></div>
+    <input type="text" id="message-input" placeholder="Type your message here...">
+    <button id="send-btn">Send</button>
 </div>
 
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.19.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.19.0/firebase-database.js"></script>
+
 <script>
-    const messagesDiv = document.getElementById('messages');
+    // Your Firebase configuration
+    const firebaseConfig = {
+        apiKey: "your-api-key",
+        authDomain: "your-auth-domain",
+        databaseURL: "your-database-url",
+        projectId: "your-project-id",
+        storageBucket: "your-storage-bucket",
+        messagingSenderId: "your-sender-id",
+        appId: "your-app-id"
+    };
+
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // DOM elements
     const messageInput = document.getElementById('message-input');
-    const sendButton = document.getElementById('send-button');
+    const sendButton = document.getElementById('send-btn');
+    const messagesDiv = document.getElementById('messages');
 
-    // Connect to WebSocket server
-    const socket = new WebSocket('ws://localhost:8080'); // Update with your server address
+    // Sending a message
+    sendButton.onclick = function () {
+        const message = messageInput.value.trim();
+        if (message !== '') {
+            const newMessageRef = database.ref('messages').push();
+            newMessageRef.set({
+                text: message,
+                timestamp: Date.now()
+            });
+            messageInput.value = ''; // Clear input field
+        }
+    };
 
-    // Function to add a message to the chat
-    function addMessage(sender, text) {
+    // Listen for new messages in the database
+    database.ref('messages').on('child_added', function (snapshot) {
+        const messageData = snapshot.val();
         const messageElement = document.createElement('div');
-        messageElement.classList.add('message');
-        messageElement.innerHTML = `<span>${sender}:</span> ${text}`;
+        messageElement.textContent = messageData.text;
         messagesDiv.appendChild(messageElement);
-
-        // Scroll to the latest message
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-    }
-
-    // Listen for messages from the server
-    socket.addEventListener('message', (event) => {
-        const { sender, text } = JSON.parse(event.data);
-        addMessage(sender, text);
-    });
-
-    // Handle sending a message
-    sendButton.addEventListener('click', () => {
-        const messageText = messageInput.value.trim();
-        if (messageText) {
-            const message = { sender: 'Anonymous', text: messageText };
-            socket.send(JSON.stringify(message)); // Send message to server
-            messageInput.value = '';
-        }
-    });
-
-    // Handle pressing "Enter" key to send a message
-    messageInput.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            sendButton.click();
-        }
+        messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the bottom
     });
 </script>
 
