@@ -3,23 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Say Hi</title>
+    <title>Spinning Pyramid</title>
     <style>
         body {
+            margin: 0;
+            height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            background: #282c34;
+            overflow: hidden;
         }
-        h1 {
-            color: #333;
+
+        .scene {
+            width: 200px;
+            height: 200px;
+            perspective: 600px;
+        }
+
+        .pyramid {
+            width: 0;
+            height: 0;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: spin 4s linear infinite;
+        }
+
+        .pyramid .face {
+            position: absolute;
+            width: 0;
+            height: 0;
+            border-style: solid;
+            border-width: 0 100px 173.2px 100px;
+            transform-origin: 50% 50%;
+        }
+
+        .face1 {
+            border-color: transparent transparent #ff6347 transparent;
+            transform: rotateY(0deg) translateZ(86.6px);
+        }
+
+        .face2 {
+            border-color: transparent transparent #4682b4 transparent;
+            transform: rotateY(120deg) translateZ(86.6px);
+        }
+
+        .face3 {
+            border-color: transparent transparent #32cd32 transparent;
+            transform: rotateY(240deg) translateZ(86.6px);
+        }
+
+        .face4 {
+            border-color: transparent transparent #ffd700 transparent;
+            transform: rotateX(-90deg) translateZ(86.6px);
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotateX(0deg) rotateY(0deg);
+            }
+            100% {
+                transform: rotateX(360deg) rotateY(360deg);
+            }
         }
     </style>
 </head>
 <body>
-    <h1>Hi</h1>
+    <div class="scene">
+        <div class="pyramid">
+            <div class="face face1"></div>
+            <div class="face face2"></div>
+            <div class="face face3"></div>
+            <div class="face face4"></div>
+        </div>
+    </div>
 </body>
 </html>
