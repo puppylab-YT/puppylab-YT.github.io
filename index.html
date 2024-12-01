@@ -3,56 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Cube</title>
+    <title>Anonymous Chat Room</title>
     <style>
         body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            font-family: Arial, sans-serif;
             margin: 0;
-            background-color: #282c34;
-            perspective: 1000px;
+            padding: 0;
+            background-color: #f3f3f3;
         }
 
-        .cube {
-            position: relative;
-            width: 100px;
-            height: 100px;
-            transform-style: preserve-3d;
-            animation: rotateCube 5s infinite linear;
+        #chat-container {
+            width: 100%;
+            max-width: 600px;
+            margin: 50px auto;
+            background: #fff;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
-        .cube div {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            background: rgba(255, 255, 255, 0.8);
-            border: 2px solid #fff;
+        #messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            border-bottom: 1px solid #ccc;
         }
 
-        .front  { transform: rotateY(0deg) translateZ(50px); background: #ff0000; }
-        .back   { transform: rotateY(180deg) translateZ(50px); background: #00ff00; }
-        .right  { transform: rotateY(90deg) translateZ(50px); background: #0000ff; }
-        .left   { transform: rotateY(-90deg) translateZ(50px); background: #ffff00; }
-        .top    { transform: rotateX(90deg) translateZ(50px); background: #ff00ff; }
-        .bottom { transform: rotateX(-90deg) translateZ(50px); background: #00ffff; }
+        .message {
+            margin-bottom: 10px;
+        }
 
-        @keyframes rotateCube {
-            0% { transform: rotateX(0deg) rotateY(0deg); }
-            50% { transform: rotateX(180deg) rotateY(180deg); }
-            100% { transform: rotateX(360deg) rotateY(360deg); }
+        .message span {
+            font-weight: bold;
+        }
+
+        #input-container {
+            display: flex;
+            padding: 10px;
+            background: #f9f9f9;
+        }
+
+        #input-container input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        #input-container button {
+            padding: 8px 15px;
+            margin-left: 10px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        #input-container button:hover {
+            background-color: #0056b3;
         }
     </style>
 </head>
 <body>
-    <div class="cube">
-        <div class="front"></div>
-        <div class="back"></div>
-        <div class="right"></div>
-        <div class="left"></div>
-        <div class="top"></div>
-        <div class="bottom"></div>
+
+<div id="chat-container">
+    <div id="messages">
+        <!-- Chat messages will appear here -->
     </div>
+    <div id="input-container">
+        <input type="text" id="message-input" placeholder="Type a message...">
+        <button id="send-button">Send</button>
+    </div>
+</div>
+
+<script>
+    const messagesDiv = document.getElementById('messages');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+
+    // Function to add a message to the chat
+    function addMessage(sender, text) {
+        const messageElement = document.createElement('div');
+        messageElement.classList.add('message');
+        messageElement.innerHTML = `<span>${sender}:</span> ${text}`;
+        messagesDiv.appendChild(messageElement);
+
+        // Scroll to the latest message
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+
+    // Handle sending a message
+    sendButton.addEventListener('click', () => {
+        const messageText = messageInput.value.trim();
+        if (messageText) {
+            addMessage('You', messageText); // Add the user's message
+            messageInput.value = '';
+            // Simulate a response from the server
+            setTimeout(() => {
+                addMessage('Anonymous', 'Thanks for your message!');
+            }, 1000);
+        }
+    });
+
+    // Handle pressing "Enter" key to send a message
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+            sendButton.click();
+        }
+    });
+</script>
+
 </body>
 </html>
