@@ -3,78 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Cube</title>
+    <title>Ball Physics Simulator</title>
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #282c34;
-            perspective: 1000px;
+        canvas {
+            background-color: #eee;
+            display: block;
+            margin: 0 auto;
+            border: 1px solid black;
         }
-
-        .cube {
-            position: relative;
-            width: 100px;
-            height: 100px;
-            transform-style: preserve-3d;
-        }
-
-        .cube div {
-            position: absolute;
-            width: 100px;
-            height: 100px;
-            border: 2px solid #fff;
-        }
-
-        .front  { transform: rotateY(0deg) translateZ(50px); background: #ff0000; }
-        .back   { transform: rotateY(180deg) translateZ(50px); background: #00ff00; }
-        .right  { transform: rotateY(90deg) translateZ(50px); background: #0000ff; }
-        .left   { transform: rotateY(-90deg) translateZ(50px); background: #ffff00; }
-        .top    { transform: rotateX(90deg) translateZ(50px); background: #ff00ff; }
-        .bottom { transform: rotateX(-90deg) translateZ(50px); background: #00ffff; }
-
     </style>
 </head>
 <body>
-    <div class="cube">
-        <div class="front"></div>
-        <div class="back"></div>
-        <div class="right"></div>
-        <div class="left"></div>
-        <div class="top"></div>
-        <div class="bottom"></div>
-    </div>
-
+    <canvas id="simulatorCanvas" width="600" height="400"></canvas>
     <script>
-        const cube = document.querySelector('.cube');
-        let isDragging = false;
-        let startX, startY;
-        let currentX = 0, currentY = 0;
+        const canvas = document.getElementById('simulatorCanvas');
+        const ctx = canvas.getContext('2d');
 
-        document.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.clientX - currentX;
-            startY = e.clientY - currentY;
-        });
+        let ball = {
+            x: canvas.width / 2,
+            y: canvas.height / 2,
+            vx: 2,
+            vy: 2,
+            radius: 15,
+            color: 'blue'
+        };
 
-        document.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                currentX = e.clientX - startX;
-                currentY = e.clientY - startY;
-                cube.style.transform = `rotateX(${currentY}deg) rotateY(${currentX}deg)`;
+        function drawBall() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            ctx.closePath();
+        }
+
+        function updateBallPosition() {
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+
+            if (ball.x + ball.radius > canvas.width || ball.x - ball.radius < 0) {
+                ball.vx = -ball.vx;
             }
-        });
 
-        document.addEventListener('mouseup', () => {
-            isDragging = false;
-        });
+            if (ball.y + ball.radius > canvas.height || ball.y - ball.radius < 0) {
+                ball.vy = -ball.vy;
+            }
+        }
 
-        document.addEventListener('mouseleave', () => {
-            isDragging = false;
-        });
+        function animate() {
+            drawBall();
+            updateBallPosition();
+            requestAnimationFrame(animate);
+        }
+
+        animate();
     </script>
 </body>
 </html>
