@@ -32,7 +32,11 @@
             vy: 0,
             radius: 20,
             color: 'blue',
-            isDragging: false
+            isDragging: false,
+            dragStartX: 0,
+            dragStartY: 0,
+            dragEndX: 0,
+            dragEndY: 0
         };
 
         const gravity = 0.5;
@@ -84,12 +88,21 @@
 
             if (Math.sqrt((mouseX - ball.x) ** 2 + (mouseY - ball.y) ** 2) < ball.radius) {
                 ball.isDragging = true;
+                ball.dragStartX = mouseX;
+                ball.dragStartY = mouseY;
                 canvas.addEventListener('mousemove', onMouseMove);
             }
         });
 
-        canvas.addEventListener('mouseup', () => {
+        canvas.addEventListener('mouseup', (e) => {
             if (ball.isDragging) {
+                const rect = canvas.getBoundingClientRect();
+                ball.dragEndX = e.clientX - rect.left;
+                ball.dragEndY = e.clientY - rect.top;
+
+                ball.vx = (ball.dragEndX - ball.dragStartX) * 0.1;
+                ball.vy = (ball.dragEndY - ball.dragStartY) * 0.1;
+
                 ball.isDragging = false;
                 canvas.removeEventListener('mousemove', onMouseMove);
             }
@@ -99,8 +112,6 @@
             const rect = canvas.getBoundingClientRect();
             ball.x = e.clientX - rect.left;
             ball.y = e.clientY - rect.top;
-            ball.vx = 0;
-            ball.vy = 0;
         }
 
         canvas.addEventListener('mouseleave', () => {
