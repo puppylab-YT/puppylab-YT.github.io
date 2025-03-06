@@ -1,233 +1,290 @@
-import pygame
-import sys
-import random
-import math
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ball Physics</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+        }
+        canvas {
+            display: block;
+        }
+        #sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 100px;
+            background: white;
+            border-left: 2px solid black;
+        }
+        .button {
+            width: 80px;
+            height: 50px;
+            margin: 10px;
+            background: #808080;
+            border: none;
+            color: black;
+            font-size: 16px;
+            cursor: pointer;
+            position: absolute;
+        }
+        #clearLines {
+            bottom: 70px;
+        }
+        #clearBalls {
+            bottom: 130px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas"></canvas>
+    <div id="sidebar">
+        <button id="clearLines" class="button">Clear</button>
+        <button id="clearBalls" class="button">Balls</button>
+    </div>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const sidebar = document.getElementById('sidebar');
 
-# Initialize Pygame
-pygame.init()
+        // Constants
+        const GRID_SIZE = 30;
+        const GRAVITY = 0.5;
+        const BOUNCE_FACTOR = 0.7;
+        const LINE_THICKNESS = 4;
+        const SPAWN_DELAY = 15;
 
-# Constants
-GRID_SIZE = 30
-WIDTH = 800
-HEIGHT = 600
-SIDEBAR_WIDTH = 100
-FPS = 60
-GRAVITY = 0.5
-BOUNCE_FACTOR = 0.7
-LINE_THICKNESS = 4
+        // Colors
+        const COLORS = [
+            '#FF0000', // RED
+            '#00FFFF', // CYAN
+            '#00FF00', // GREEN
+            '#FF0000', // RED
+            '#FFC0CB', // PINK
+            '#FFC0CB'  // PINK
+        ];
 
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-GRAY = (128, 128, 128)
-LIGHT_BLUE = (200, 200, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-PINK = (255, 192, 203)
-CYAN = (0, 255, 255)
+        // Resize canvas to fill window
+        function resizeCanvas() {
+            canvas.width = window.innerWidth - 100; // Account for sidebar
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
-class Line:
-    def __init__(self, start_pos, end_pos):
-        self.start_pos = start_pos
-        self.end_pos = end_pos
+        class Ball {
+            constructor(x, y, color) {
+                this.x = x * GRID_SIZE + GRID_SIZE / 2;
+                this.y = y * GRID_SIZE + GRID_SIZE / 2;
+                this.color = color;
+                this.radius = GRID_SIZE / 3;
+                this.dx = 0;
+                this.dy = 0;
+            }
 
-    def draw(self, screen):
-        pygame.draw.line(screen, BLACK, self.start_pos, self.end_pos, LINE_THICKNESS)
+            update(lines) {
+                // Apply gravity
+                this.dy += GRAVITY;
+                
+                // Update position
+                this.x += this.dx;
+                this.y += this.dy;
+                
+                // Check collisions with lines
+                for (const line of lines) {
+                    this.checkLineCollision(line);
+                }
+                
+                // Wall collisions
+                if (this.x - this.radius < 0) {
+                    this.x = this.radius;
+                } else if (this.x + this.radius > canvas.width) {
+                    this.x = canvas.width - this.radius;
+                }
+                
+                if (this.y + this.radius > canvas.height) {
+                    this.y = canvas.height - this.radius;
+                    this.dy *= -BOUNCE_FACTOR;
+                }
+            }
 
-    def check_collision(self, ball):
-        # Get the closest point on the line to the ball
-        x1, y1 = self.start_pos
-        x2, y2 = self.end_pos
-        px, py = ball.x, ball.y
-        
-        # Vector from line start to end
-        line_vec = (x2 - x1, y2 - y1)
-        line_len = math.sqrt(line_vec[0]**2 + line_vec[1]**2)
-        if line_len == 0:
-            return False
+            checkLineCollision(line) {
+                const [x1, y1] = line.start;
+                const [x2, y2] = line.end;
+                
+                // Vector from line start to end
+                const lineVecX = x2 - x1;
+                const lineVecY = y2 - y1;
+                const lineLen = Math.sqrt(lineVecX * lineVecX + lineVecY * lineVecY);
+                if (lineLen === 0) return;
+                
+                // Normalized line vector
+                const lineUnitX = lineVecX / lineLen;
+                const lineUnitY = lineVecY / lineLen;
+                
+                // Vector from line start to ball
+                const ballVecX = this.x - x1;
+                const ballVecY = this.y - y1;
+                
+                // Project ball vector onto line vector
+                let projLen = ballVecX * lineUnitX + ballVecY * lineUnitY;
+                projLen = Math.max(0, Math.min(lineLen, projLen));
+                
+                // Get closest point on line
+                const closestX = x1 + lineUnitX * projLen;
+                const closestY = y1 + lineUnitY * projLen;
+                
+                // Check distance from ball to closest point
+                const distX = this.x - closestX;
+                const distY = this.y - closestY;
+                const dist = Math.sqrt(distX * distX + distY * distY);
+                
+                if (dist <= this.radius) {
+                    // Calculate reflection
+                    const normalLen = Math.sqrt(distX * distX + distY * distY);
+                    if (normalLen > 0) {
+                        const normalX = distX / normalLen;
+                        const normalY = distY / normalLen;
+                        
+                        const dotProduct = this.dx * normalX + this.dy * normalY;
+                        this.dx = (this.dx - 2 * dotProduct * normalX) * BOUNCE_FACTOR;
+                        this.dy = (this.dy - 2 * dotProduct * normalY) * BOUNCE_FACTOR;
+                        
+                        // Move ball out of collision
+                        this.x = closestX + normalX * (this.radius + 1);
+                        this.y = closestY + normalY * (this.radius + 1);
+                    }
+                }
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+        }
+
+        // Game state
+        let balls = [];
+        let lines = [];
+        let currentLine = null;
+        let isDrawing = false;
+        let spawnTimer = 0;
+        let colorIndex = 0;
+
+        // Mouse handling
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            const rect = canvas.getBoundingClientRect();
+            currentLine = {
+                start: [e.clientX - rect.left, e.clientY - rect.top],
+                end: [e.clientX - rect.left, e.clientY - rect.top]
+            };
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isDrawing) {
+                const rect = canvas.getBoundingClientRect();
+                currentLine.end = [e.clientX - rect.left, e.clientY - rect.top];
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDrawing && currentLine) {
+                lines.push(currentLine);
+                currentLine = null;
+                isDrawing = false;
+            }
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            isDrawing = false;
+            currentLine = null;
+        });
+
+        // Button handlers
+        document.getElementById('clearLines').addEventListener('click', () => {
+            lines = [];
+        });
+
+        document.getElementById('clearBalls').addEventListener('click', () => {
+            balls = [];
+        });
+
+        function drawGrid() {
+            ctx.strokeStyle = '#E6E6FF';
+            ctx.lineWidth = 1;
             
-        # Normalized line vector
-        line_unit = (line_vec[0]/line_len, line_vec[1]/line_len)
-        
-        # Vector from line start to ball
-        ball_vec = (px - x1, py - y1)
-        
-        # Project ball vector onto line vector
-        proj_len = ball_vec[0]*line_unit[0] + ball_vec[1]*line_unit[1]
-        proj_len = max(0, min(line_len, proj_len))
-        
-        # Get closest point on line
-        closest_point = (x1 + line_unit[0]*proj_len, y1 + line_unit[1]*proj_len)
-        
-        # Check distance from ball to closest point
-        dist = math.sqrt((px - closest_point[0])**2 + (py - closest_point[1])**2)
-        if dist <= ball.radius:
-            # Calculate reflection vector
-            normal = (ball.x - closest_point[0], ball.y - closest_point[1])
-            normal_len = math.sqrt(normal[0]**2 + normal[1]**2)
-            if normal_len > 0:
-                normal = (normal[0]/normal_len, normal[1]/normal_len)
-                # Calculate reflection
-                dot_product = ball.dx*normal[0] + ball.dy*normal[1]
-                ball.dx = (ball.dx - 2*dot_product*normal[0]) * BOUNCE_FACTOR
-                ball.dy = (ball.dy - 2*dot_product*normal[1]) * BOUNCE_FACTOR
-                # Move ball out of collision
-                ball.x = closest_point[0] + normal[0] * (ball.radius + 1)
-                ball.y = closest_point[1] + normal[1] * (ball.radius + 1)
-            return True
-        return False
-
-class Ball:
-    def __init__(self, grid_x, grid_y, color):
-        self.x = grid_x * GRID_SIZE + GRID_SIZE // 2
-        self.y = grid_y * GRID_SIZE + GRID_SIZE // 2
-        self.color = color
-        self.radius = GRID_SIZE // 3
-        self.dx = 0
-        self.dy = 0
-
-    def update(self, lines):
-        # Apply gravity
-        self.dy += GRAVITY
-        
-        # Update position
-        self.x += self.dx
-        self.y += self.dy
-        
-        # Check collisions with lines
-        for line in lines:
-            line.check_collision(self)
-        
-        # Wall collisions
-        if self.x - self.radius < 0:
-            self.x = self.radius
-        elif self.x + self.radius > WIDTH:
-            self.x = WIDTH - self.radius
+            for (let x = 0; x < canvas.width; x += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
             
-        if self.y + self.radius > HEIGHT:
-            self.y = HEIGHT - self.radius
-            self.dy *= -BOUNCE_FACTOR
+            for (let y = 0; y < canvas.height; y += GRID_SIZE) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+        }
 
-    def draw(self, screen):
-        pygame.draw.circle(screen, self.color, (int(self.x), int(self.y)), self.radius)
+        function spawnBall() {
+            const ball = new Ball(1, 1, COLORS[colorIndex]);
+            balls.push(ball);
+            colorIndex = (colorIndex + 1) % COLORS.length;
+        }
 
-class Game:
-    def __init__(self):
-        self.screen = pygame.display.set_mode((WIDTH + SIDEBAR_WIDTH, HEIGHT))
-        pygame.display.set_caption("Ball Physics Drawing")
-        self.clock = pygame.time.Clock()
-        
-        self.balls = []
-        self.lines = []
-        self.drawing = False
-        self.current_line_start = None
-        
-        self.spawn_timer = 0
-        self.spawn_delay = 15
-        self.color_sequence = [RED, CYAN, GREEN, RED, PINK, PINK]
-        self.current_color_index = 0
-        self.spawn_x = 1
-        self.spawn_y = 1
-
-    def spawn_ball(self):
-        ball = Ball(self.spawn_x, self.spawn_y, self.color_sequence[self.current_color_index])
-        self.balls.append(ball)
-        self.current_color_index = (self.current_color_index + 1) % len(self.color_sequence)
-
-    def draw_sidebar(self):
-        # Draw sidebar background
-        pygame.draw.rect(self.screen, WHITE, (WIDTH, 0, SIDEBAR_WIDTH, HEIGHT))
-        pygame.draw.line(self.screen, BLACK, (WIDTH, 0), (WIDTH, HEIGHT), 2)
-
-        # Draw clear lines button
-        clear_lines_button = pygame.Rect(WIDTH + 10, HEIGHT - 60, 80, 50)
-        pygame.draw.rect(self.screen, GRAY, clear_lines_button)
-        font = pygame.font.Font(None, 36)
-        text = font.render("Clear", True, BLACK)
-        text_rect = text.get_rect(center=clear_lines_button.center)
-        self.screen.blit(text, text_rect)
-
-        # Draw clear balls button
-        clear_balls_button = pygame.Rect(WIDTH + 10, HEIGHT - 120, 80, 50)
-        pygame.draw.rect(self.screen, GRAY, clear_balls_button)
-        text = font.render("Balls", True, BLACK)
-        text_rect = text.get_rect(center=clear_balls_button.center)
-        self.screen.blit(text, text_rect)
-        
-        return clear_lines_button, clear_balls_button
-
-    def run(self):
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == pygame.MOUSEBUTTONDOWN:
-                    x, y = event.pos
-                    if x < WIDTH:  # In game area
-                        self.drawing = True
-                        self.current_line_start = (x, y)
-                    else:  # In sidebar
-                        clear_lines_button = pygame.Rect(WIDTH + 10, HEIGHT - 60, 80, 50)
-                        clear_balls_button = pygame.Rect(WIDTH + 10, HEIGHT - 120, 80, 50)
-                        if clear_lines_button.collidepoint(event.pos):
-                            self.lines = []  # Clear all lines
-                        elif clear_balls_button.collidepoint(event.pos):
-                            self.balls = []  # Clear all balls
-                elif event.type == pygame.MOUSEBUTTONUP:
-                    if self.drawing and self.current_line_start:
-                        x, y = event.pos
-                        if x < WIDTH:  # Only end line in game area
-                            self.lines.append(Line(self.current_line_start, (x, y)))
-                        self.drawing = False
-                        self.current_line_start = None
-                elif event.type == pygame.MOUSEMOTION:
-                    if self.drawing and self.current_line_start:
-                        x, y = event.pos
-                        if x >= WIDTH:  # If mouse in sidebar, use edge of game area
-                            x = WIDTH - 1
-
-            # Spawn new balls periodically
-            self.spawn_timer += 1
-            if self.spawn_timer >= self.spawn_delay:
-                self.spawn_ball()
-                self.spawn_timer = 0
-
-            # Update ball physics
-            for ball in self.balls[:]:
-                ball.update(self.lines)
-                if ball.y > HEIGHT + 100:
-                    self.balls.remove(ball)
-
-            # Draw
-            self.screen.fill(WHITE)
-            # Draw grid lines
-            for x in range(0, WIDTH, GRID_SIZE):
-                pygame.draw.line(self.screen, LIGHT_BLUE, (x, 0), (x, HEIGHT))
-            for y in range(0, HEIGHT, GRID_SIZE):
-                pygame.draw.line(self.screen, LIGHT_BLUE, (0, y), (WIDTH, y))
+        function gameLoop() {
+            // Clear canvas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            # Draw all lines
-            for line in self.lines:
-                line.draw(self.screen)
+            // Draw grid
+            drawGrid();
             
-            # Draw current line being drawn
-            if self.drawing and self.current_line_start:
-                end_pos = pygame.mouse.get_pos()
-                if end_pos[0] >= WIDTH:  # If mouse in sidebar, use edge of game area
-                    end_pos = (WIDTH - 1, end_pos[1])
-                pygame.draw.line(self.screen, BLACK, self.current_line_start, end_pos, LINE_THICKNESS)
+            // Draw lines
+            ctx.strokeStyle = 'black';
+            ctx.lineWidth = LINE_THICKNESS;
+            for (const line of lines) {
+                ctx.beginPath();
+                ctx.moveTo(...line.start);
+                ctx.lineTo(...line.end);
+                ctx.stroke();
+            }
             
-            # Draw balls
-            for ball in self.balls:
-                ball.draw(self.screen)
+            // Draw current line being drawn
+            if (currentLine) {
+                ctx.beginPath();
+                ctx.moveTo(...currentLine.start);
+                ctx.lineTo(...currentLine.end);
+                ctx.stroke();
+            }
             
-            # Draw sidebar with clear button
-            clear_lines_button, clear_balls_button = self.draw_sidebar()
+            // Spawn new balls
+            spawnTimer++;
+            if (spawnTimer >= SPAWN_DELAY) {
+                spawnBall();
+                spawnTimer = 0;
+            }
             
-            pygame.display.flip()
-            self.clock.tick(FPS)
+            // Update and draw balls
+            balls = balls.filter(ball => ball.y <= canvas.height + 100);
+            for (const ball of balls) {
+                ball.update(lines);
+                ball.draw();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
 
-if __name__ == "__main__":
-    game = Game()
-    game.run()
+        gameLoop();
+    </script>
+</body>
+</html>
